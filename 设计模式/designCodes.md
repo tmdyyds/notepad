@@ -1,7 +1,5 @@
 ## 创建型
-
 ### 单利模式
-
 > 定义：一个类只允许创建一个对象或实例，这个对象在进程内是唯一。
 >
 > 线程内唯一：若想实现线程内单利对象唯一，可以通过hashmap方式，key为线程id,value为对象实例实现。
@@ -9,7 +7,6 @@
 > 集群唯一：单利放在公共的存储空间内，进程在使用时去公共空间去取，为了保证唯一性，在使用时候加锁，使用结束后释放锁。
 
 #### php
-
 ```
 class Singleton
 {
@@ -223,7 +220,6 @@ var_dump($mySingleton, $elseSingleton);exit;
 ```
 
 #### go
-
 ```
 type single struct{}
 
@@ -254,13 +250,11 @@ func main() {
 ```
 
 ### 工厂模式
-
 > **工厂方法**
 >
 > 定义：其在父类中提供一个创建对象的方法， 允许子类决定实例化对象(产品)的类型。
 
 #### php
-
 ```
 abstract class SocialNetworkPoster
 {
@@ -425,7 +419,6 @@ clientCode(new LinkedInPoster("john_smith@example.com", "******"));
 ```
 
 #### go
-
 ```
 package design
 
@@ -581,7 +574,6 @@ func getGun(gunType string) (iGun, error) {
 ```
 
 ### 抽象工厂
-
 > **抽象工厂**
 >
 > 定义：一个工厂创建一簇对象（多种），解决的是多维问题（文章中是二维）。工厂方法是抽象工厂的一种特例。抽象工厂是采用降维的思想来解决复杂问题。
@@ -966,7 +958,6 @@ type nikeShirt struct {
 > https://refactoringguru.cn/design-patterns/factory-comparison
 
 ### 建造者模式
-
 > 定义：分步骤创建复杂对象。使用相同的代码生成不同类型和形式的对象。主要是通过建造类创建对象。
 
 #### php
@@ -1326,14 +1317,57 @@ func (f *Folder) clone() Inode {
 - 工厂模式与建造者区别
 > **工厂模式**创建不同但是相关类型的对象(继承同一父类或接口)，由参数决定创建对象。**建造者模式**用来创建复杂对象，通过设置不同的可选参数，定制化创建不同的对象。(工厂模式是根据不同的条件生成不同Class的对象，构建者模式是根据不同参数生成一个class的不同对象)
 
-## 结构型
 
+## 结构型
 ### 代理模式
 > 定义：在不改变原始类(或叫被代理类)代码情况下，通过引入代理类来给原始类附加功能(这里注意：<font color="red">**代理类是附加新的功能，装饰器是增强功能**</font>)。
 
+#### 实例
+```
+// 代理模式的代码结构(下面的接口也可以替换成抽象类)
+public interface IA {
+  void f();
+}
+public class A impelements IA {
+  public void f() { //... }
+}
+public class AProxy implements IA {
+  private IA a;
+  public AProxy(IA a) {
+    this.a = a;
+  }
+  
+  public void f() {
+    // 新添加的代理逻辑
+    a.f();
+    // 新添加的代理逻辑
+  }
+}
+
+// 装饰器模式的代码结构(下面的接口也可以替换成抽象类)
+public interface IA {
+  void f();
+}
+public class A implements IA {
+  public void f() { //... }
+}
+public class ADecorator implements IA {
+  private IA a;
+  public ADecorator(IA a) {
+    this.a = a;
+  }
+  
+  public void f() {
+    // 功能增强代码
+    a.f();
+    // 功能增强代码
+  }
+}
+
+```
+
 #### php
 ```
-//第一实例
 /**
  * Interface Subject 抽象主题角色
  *
@@ -1438,8 +1472,9 @@ class Client
 
 // 测试
 Client::test();
+```
 
-//第二实例
+```
 // 远程服务接口。
 interface ThirdPartyTVLib is
     method listVideos()
@@ -1516,7 +1551,6 @@ class Application is
 
 ```
 #### go
-
 ```
 //server server
 type Server interface {
@@ -1579,55 +1613,11 @@ func (a *application) HandleRequest(url, method string) (int, string) {
 > 适配器模式能为被封装对象提供不同的接口， 代理模式能为对象提供相同的接口， 装饰模式则能为对象提供加强的接口。
 > 装饰和代理有着相似的结构， 但是其意图却非常不同。 这两个模式的构建都基于组合原则， 也就是说一个对象应该将部分工作委派给另一个对象。**两者之间的不同之处在于代理通常自行管理其服务对象的生命周期， 而装饰的生成则总是由客户端进行控制**。
 - 代理和装饰器代码对比
-```
-
-// 代理模式的代码结构(下面的接口也可以替换成抽象类)
-public interface IA {
-  void f();
-}
-public class A impelements IA {
-  public void f() { //... }
-}
-public class AProxy implements IA {
-  private IA a;
-  public AProxy(IA a) {
-    this.a = a;
-  }
-  
-  public void f() {
-    // 新添加的代理逻辑
-    a.f();
-    // 新添加的代理逻辑
-  }
-}
-
-// 装饰器模式的代码结构(下面的接口也可以替换成抽象类)
-public interface IA {
-  void f();
-}
-public class A implements IA {
-  public void f() { //... }
-}
-public class ADecorator implements IA {
-  private IA a;
-  public ADecorator(IA a) {
-    this.a = a;
-  }
-  
-  public void f() {
-    // 功能增强代码
-    a.f();
-    // 功能增强代码
-  }
-}
-
-```
 
 ### 适配器模式
 > 定义：它将原本不兼容的不能一起工作的类，经过适配，让它们可以一起工作。
 
 #### 实例结构
-
 ```
 // 类适配器: 基于继承
 public interface ITarget {
@@ -1690,10 +1680,7 @@ public class Adaptor implements ITarget {
 ```
 
 #### php
-
 ```
-//第一实例
-
 /**
  * 类适配器模式
  * @author guisu
@@ -1796,7 +1783,7 @@ Client::main();
 > **适配器模式：** 适配器模式是一种事后的补救策略。适配器提供跟原始类不同的接口，而代理模式、装饰器模式提供的都是跟原始类相同的接口。
 
 ### 装饰器模式
-> 通过将对象放入包含行为的特殊封装对象中来为原对象绑定新的行为。
+> 定义：通过将对象放入包含行为的特殊封装对象中来为原对象绑定新的行为。
 
 #### 实例
 ```
@@ -1905,9 +1892,9 @@ class ApplicationConfigurator is
         salary = logger.load()
     // ...
 ```
+
 #### php
 ```
-
 /**
  * The Component interface declares a filtering method that must be implemented
  * by all concrete components and decorators.
@@ -2121,11 +2108,50 @@ echo "\n\n\n";
 
 #### go
 ```
+package design
+
+type Pizza interface {
+	GetPrice() int
+}
+
+type VeggeMania struct {
+}
+
+func (v *VeggeMania) GetPrice() int {
+	return 15
+}
+
+//具体装饰
+type TomatoTopping struct {
+	pizza Pizza
+}
+
+func (t *TomatoTopping) GetPrice() int {
+	pizzaPrice := t.pizza.GetPrice()
+	return pizzaPrice + 10
+}
+
+type CheeseTopping struct {
+	pizza Pizza
+}
+
+func (c *CheeseTopping) GetPrice() int {
+	pizzaPrice := c.pizza.GetPrice()
+	return pizzaPrice + 20
+}
+
+func NewTomatoTopping(p Pizza) *TomatoTopping {
+	return &TomatoTopping{pizza: p}
+}
+
+func NewCheeseTopping(p Pizza) *CheeseTopping {
+	return &CheeseTopping{pizza: p}
+}
 
 ```
 
 ### 门面模式
-> 门面模式为子系统提供一组统一的接口，定义一组高层接口让子系统更易用。
+> 定义：门面模式为子系统提供一组统一的接口，定义一组高层接口让子系统更易用。
 
 #### php
 ```

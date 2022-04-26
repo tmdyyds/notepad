@@ -1612,7 +1612,6 @@ func (a *application) HandleRequest(url, method string) (int, string) {
 > 代理和装饰器都采用了封装，不同的是：代理是对原始类添加新的功能，装饰器是对原始类的功能进行增强，并且这两个设计模式都隐藏对原始类的直接访问。
 > 适配器模式能为被封装对象提供不同的接口， 代理模式能为对象提供相同的接口， 装饰模式则能为对象提供加强的接口。
 > 装饰和代理有着相似的结构， 但是其意图却非常不同。 这两个模式的构建都基于组合原则， 也就是说一个对象应该将部分工作委派给另一个对象。**两者之间的不同之处在于代理通常自行管理其服务对象的生命周期， 而装饰的生成则总是由客户端进行控制**。
-- 代理和装饰器代码对比
 
 ### 适配器模式
 > 定义：它将原本不兼容的不能一起工作的类，经过适配，让它们可以一起工作。
@@ -1772,6 +1771,48 @@ Client::main();
 
 #### go
 ```
+package design
+
+import "fmt"
+
+type Computer interface {
+	InsertIntoLightningPort()
+}
+
+type Mac struct{}
+
+func (m *Mac) InsertIntoLightningPort() {
+	fmt.Println("mac机器")
+}
+
+type Window struct{}
+
+func (w *Window) insertIntoUSBPort() {
+	fmt.Println("window机器")
+}
+
+//适配器
+type WindowsAdapter struct {
+	WindowMachine *Window
+}
+
+func (w *WindowsAdapter) InsertIntoLightningPort() {
+	fmt.Println("适配器")
+	w.WindowMachine.insertIntoUSBPort()
+}
+
+
+func main() {
+	mac := &design.Mac{}
+	mac.InsertIntoLightningPort()
+
+	win := &design.Window{}
+	winAdapter := &design.WindowsAdapter{
+		WindowMachine: win,
+	}
+	winAdapter.InsertIntoLightningPort()
+}
+
 ```
 
 <font color="red">**TIP：**</font>
@@ -2155,10 +2196,225 @@ func NewCheeseTopping(p Pizza) *CheeseTopping {
 
 #### php
 ```
+class Facade
+{
+    protected $subsystem1;
+
+    protected $subsystem2;
+
+    /**
+     * Depending on your application's needs, you can provide the Facade with
+     * existing subsystem objects or force the Facade to create them on its own.
+     */
+    public function __construct(
+        Subsystem1 $subsystem1 = null,
+        Subsystem2 $subsystem2 = null
+    ) {
+        $this->subsystem1 = $subsystem1 ?: new Subsystem1();
+        $this->subsystem2 = $subsystem2 ?: new Subsystem2();
+    }
+
+    /**
+     * The Facade's methods are convenient shortcuts to the sophisticated
+     * functionality of the subsystems. However, clients get only to a fraction
+     * of a subsystem's capabilities.
+     */
+    public function operation(): string
+    {
+        $result = "Facade initializes subsystems:\n";
+        $result .= $this->subsystem1->operation1();
+        $result .= $this->subsystem2->operation1();
+        $result .= "Facade orders subsystems to perform the action:\n";
+        $result .= $this->subsystem1->operationN();
+        $result .= $this->subsystem2->operationZ();
+
+        return $result;
+    }
+}
+
+/**
+ * The Subsystem can accept requests either from the facade or client directly.
+ * In any case, to the Subsystem, the Facade is yet another client, and it's not
+ * a part of the Subsystem.
+ */
+class Subsystem1
+{
+    public function operation1(): string
+    {
+        return "Subsystem1: Ready!\n";
+    }
+
+    // ...
+
+    public function operationN(): string
+    {
+        return "Subsystem1: Go!\n";
+    }
+}
+
+/**
+ * Some facades can work with multiple subsystems at the same time.
+ */
+class Subsystem2
+{
+    public function operation1(): string
+    {
+        return "Subsystem2: Get ready!\n";
+    }
+
+    // ...
+
+    public function operationZ(): string
+    {
+        return "Subsystem2: Fire!\n";
+    }
+}
+
+/**
+ * The client code works with complex subsystems through a simple interface
+ * provided by the Facade. When a facade manages the lifecycle of the subsystem,
+ * the client might not even know about the existence of the subsystem. This
+ * approach lets you keep the complexity under control.
+ */
+function clientCode(Facade $facade)
+{
+    // ...
+
+    echo $facade->operation();
+
+    // ...
+}
+
+/**
+ * The client code may have some of the subsystem's objects already created. In
+ * this case, it might be worthwhile to initialize the Facade with these objects
+ * instead of letting the Facade create new instances.
+ */
+$subsystem1 = new Subsystem1();
+$subsystem2 = new Subsystem2();
+$facade = new Facade($subsystem1, $subsystem2);
+clientCode($facade);
 ```
 
 #### go
 ```
+package design
+
+import "fmt"
+
+type Facade struct {
+	subsystem1 *subsystem1
+	subsystem2 *subsystem2
+}
+
+func NewFacade() *Facade {
+	return &Facade{
+		subsystem1: newSubsystem1(),
+		subsystem2: newSubsystem2(),
+	}
+}
+
+func (f *Facade) Operation() {
+	f.subsystem1.myName()
+	f.subsystem2.myName()
+}
+
+type subsystem1 struct {
+}
+
+func (s *subsystem1) myName() {
+	fmt.Println("subsystem1")
+}
+
+func newSubsystem1() *subsystem1 {
+	return &subsystem1{}
+}
+
+type subsystem2 struct {
+}
+
+func (s *subsystem2) myName() {
+	fmt.Println("subsystem2")
+}
+func newSubsystem2() *subsystem2 {
+	return &subsystem2{}
+}
+
+```
+
+```
+package design
+
+import "fmt"
+
+//外观 组合复杂子系统
+type walletFacade struct {
+	account      *account
+	securityCode *securityCode
+}
+
+func NewWalletFacade(accountId string, code int) *walletFacade {
+	fmt.Println("创建账号")
+	w := &walletFacade{
+		account:      newAccount(accountId),
+		securityCode: newSecurityCode(code),
+	}
+
+	fmt.Println("创建结束")
+	return w
+}
+
+func (w *walletFacade) AddMoneyToWallet(accountID string, securityCode int) error {
+	err := w.account.checkAccount(accountID)
+	if err != nil {
+		return err
+	}
+	err = w.securityCode.checkCode(securityCode)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//子系统一
+type account struct {
+	name string
+}
+
+func newAccount(accountName string) *account {
+	return &account{
+		name: accountName,
+	}
+}
+
+func (a *account) checkAccount(accountName string) error {
+	if a.name != accountName {
+		return fmt.Errorf("Account Name is incorrect")
+	}
+	fmt.Println("Account Verified")
+	return nil
+}
+
+//子系统二
+type securityCode struct {
+	code int
+}
+
+func newSecurityCode(code int) *securityCode {
+	return &securityCode{
+		code: code,
+	}
+}
+
+func (s *securityCode) checkCode(incomingCode int) error {
+	if s.code != incomingCode {
+		return fmt.Errorf("Security Code is incorrect")
+	}
+	fmt.Println("SecurityCode Verified")
+	return nil
+}
+
 ```
 
 <font color="red">**TIP：**</font>

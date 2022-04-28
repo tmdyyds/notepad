@@ -2421,6 +2421,550 @@ func (s *securityCode) checkCode(incomingCode int) error {
 - 适配器和门面设计区别
 > 适配器是做接口转换，解决原接口和目标接口不匹配问题。门面模式做接口整合，解决是多接口调用带来的问题。
 
+### 桥连模式
+> “一个类存在两个（或多个）独立变化的维度，我们通过组合的方式，让这两个（或多个）维度可以独立进行扩展。”通过组合关系来替代继承关系，避免继承层次的指数级爆炸。
+> 将抽象和实现解耦，让它们可以独立的变化
+
+#### 实例
+```
+// “抽象部分”定义了两个类层次结构中“控制”部分的接口。它管理着一个指向“实
+// 现部分”层次结构中对象的引用，并会将所有真实工作委派给该对象。
+class RemoteControl is
+    protected field device: Device
+    constructor RemoteControl(device: Device) is
+        this.device = device
+    method togglePower() is
+        if (device.isEnabled()) then
+            device.disable()
+        else
+            device.enable()
+    method volumeDown() is
+        device.setVolume(device.getVolume() - 10)
+    method volumeUp() is
+        device.setVolume(device.getVolume() + 10)
+    method channelDown() is
+        device.setChannel(device.getChannel() - 1)
+    method channelUp() is
+        device.setChannel(device.getChannel() + 1)
+
+
+// 你可以独立于设备类的方式从抽象层中扩展类。
+class AdvancedRemoteControl extends RemoteControl is
+    method mute() is
+        device.setVolume(0)
+
+
+// “实现部分”接口声明了在所有具体实现类中通用的方法。它不需要与抽象接口相
+// 匹配。实际上，这两个接口可以完全不一样。通常实现接口只提供原语操作，而
+// 抽象接口则会基于这些操作定义较高层次的操作。
+interface Device is
+    method isEnabled()
+    method enable()
+    method disable()
+    method getVolume()
+    method setVolume(percent)
+    method getChannel()
+    method setChannel(channel)
+
+
+// 所有设备都遵循相同的接口。
+class Tv implements Device is
+    // ...
+
+class Radio implements Device is
+    // ...
+
+
+// 客户端代码中的某个位置。
+tv = new Tv()
+remote = new RemoteControl(tv)
+remote.togglePower()
+
+radio = new Radio()
+remote = new AdvancedRemoteControl(radio)
+```
+
+#### php
+```
+/**
+ * The Abstraction defines the interface for the "control" part of the two class
+ * hierarchies. It maintains a reference to an object of the Implementation
+ * hierarchy and delegates all of the real work to this object.
+ */
+class Abstraction
+{
+    /**
+     * @var Implementation
+     */
+    protected $implementation;
+
+    public function __construct(Implementation $implementation)
+    {
+        $this->implementation = $implementation;
+    }
+
+    public function operation(): string
+    {
+        return "Abstraction: Base operation with:\n" .
+            $this->implementation->operationImplementation();
+    }
+}
+
+/**
+ * You can extend the Abstraction without changing the Implementation classes.
+ */
+class ExtendedAbstraction extends Abstraction
+{
+    public function operation(): string
+    {
+        return "ExtendedAbstraction: Extended operation with:\n" .
+            $this->implementation->operationImplementation();
+    }
+}
+
+/**
+ * The Implementation defines the interface for all implementation classes. It
+ * doesn't have to match the Abstraction's interface. In fact, the two
+ * interfaces can be entirely different. Typically the Implementation interface
+ * provides only primitive operations, while the Abstraction defines higher-
+ * level operations based on those primitives.
+ */
+interface Implementation
+{
+    public function operationImplementation(): string;
+}
+
+/**
+ * Each Concrete Implementation corresponds to a specific platform and
+ * implements the Implementation interface using that platform's API.
+ */
+class ConcreteImplementationA implements Implementation
+{
+    public function operationImplementation(): string
+    {
+        return "ConcreteImplementationA: Here's the result on the platform A.\n";
+    }
+}
+
+class ConcreteImplementationB implements Implementation
+{
+    public function operationImplementation(): string
+    {
+        return "ConcreteImplementationB: Here's the result on the platform B.\n";
+    }
+}
+
+/**
+ * Except for the initialization phase, where an Abstraction object gets linked
+ * with a specific Implementation object, the client code should only depend on
+ * the Abstraction class. This way the client code can support any abstraction-
+ * implementation combination.
+ */
+function clientCode(Abstraction $abstraction)
+{
+    // ...
+
+    echo $abstraction->operation();
+
+    // ...
+}
+
+/**
+ * The client code should be able to work with any pre-configured abstraction-
+ * implementation combination.
+ */
+$implementation = new ConcreteImplementationA();
+$abstraction = new Abstraction($implementation);
+clientCode($abstraction);
+
+echo "\n";
+
+$implementation = new ConcreteImplementationB();
+$abstraction = new ExtendedAbstraction($implementation);
+clientCode($abstraction);
+```
+
+```
+
+/**
+ * The Abstraction.
+ */
+abstract class Page
+{
+    /**
+     * @var Renderer
+     */
+    protected $renderer;
+
+    /**
+     * The Abstraction is usually initialized with one of the Implementation
+     * objects.
+     */
+    public function __construct(Renderer $renderer)
+    {
+        $this->renderer = $renderer;
+    }
+
+    /**
+     * The Bridge pattern allows replacing the attached Implementation object
+     * dynamically.
+     */
+    public function changeRenderer(Renderer $renderer): void
+    {
+        $this->renderer = $renderer;
+    }
+
+    /**
+     * The "view" behavior stays abstract since it can only be provided by
+     * Concrete Abstraction classes.
+     */
+    abstract public function view(): string;
+}
+
+/**
+ * This Concrete Abstraction represents a simple page.
+ */
+class SimplePage extends Page
+{
+    protected $title;
+    protected $content;
+
+    public function __construct(Renderer $renderer, string $title, string $content)
+    {
+        parent::__construct($renderer);
+        $this->title = $title;
+        $this->content = $content;
+    }
+
+    public function view(): string
+    {
+        return $this->renderer->renderParts([
+            $this->renderer->renderHeader(),
+            $this->renderer->renderTitle($this->title),
+            $this->renderer->renderTextBlock($this->content),
+            $this->renderer->renderFooter()
+        ]);
+    }
+}
+
+/**
+ * This Concrete Abstraction represents a more complex page.
+ */
+class ProductPage extends Page
+{
+    protected $product;
+
+    public function __construct(Renderer $renderer, Product $product)
+    {
+        parent::__construct($renderer);
+        $this->product = $product;
+    }
+
+    public function view(): string
+    {
+        return $this->renderer->renderParts([
+            $this->renderer->renderHeader(),
+            $this->renderer->renderTitle($this->product->getTitle()),
+            $this->renderer->renderTextBlock($this->product->getDescription()),
+            $this->renderer->renderImage($this->product->getImage()),
+            $this->renderer->renderLink("/cart/add/" . $this->product->getId(), "Add to cart"),
+            $this->renderer->renderFooter()
+        ]);
+    }
+}
+
+/**
+ * A helper class for the ProductPage class.
+ */
+class Product
+{
+    private $id, $title, $description, $image, $price;
+
+    public function __construct(
+        string $id,
+        string $title,
+        string $description,
+        string $image,
+        float $price
+    ) {
+        $this->id = $id;
+        $this->title = $title;
+        $this->description = $description;
+        $this->image = $image;
+        $this->price = $price;
+    }
+
+    public function getId(): string { return $this->id; }
+
+    public function getTitle(): string { return $this->title; }
+
+    public function getDescription(): string { return $this->description; }
+
+    public function getImage(): string { return $this->image; }
+
+    public function getPrice(): float { return $this->price; }
+}
+
+
+/**
+ * The Implementation declares a set of "real", "under-the-hood", "platform"
+ * methods.
+ *
+ * In this case, the Implementation lists rendering methods that can be used to
+ * compose any web page. Different Abstractions may use different methods of the
+ * Implementation.
+ */
+interface Renderer
+{
+    public function renderTitle(string $title): string;
+
+    public function renderTextBlock(string $text): string;
+
+    public function renderImage(string $url): string;
+
+    public function renderLink(string $url, string $title): string;
+
+    public function renderHeader(): string;
+
+    public function renderFooter(): string;
+
+    public function renderParts(array $parts): string;
+}
+
+/**
+ * This Concrete Implementation renders a web page as HTML.
+ */
+class HTMLRenderer implements Renderer
+{
+    public function renderTitle(string $title): string
+    {
+        return "<h1>$title</h1>";
+    }
+
+    public function renderTextBlock(string $text): string
+    {
+        return "<div class='text'>$text</div>";
+    }
+
+    public function renderImage(string $url): string
+    {
+        return "<img src='$url'>";
+    }
+
+    public function renderLink(string $url, string $title): string
+    {
+        return "<a href='$url'>$title</a>";
+    }
+
+    public function renderHeader(): string
+    {
+        return "<html><body>";
+    }
+
+    public function renderFooter(): string
+    {
+        return "</body></html>";
+    }
+
+    public function renderParts(array $parts): string
+    {
+        return implode("\n", $parts);
+    }
+}
+
+/**
+ * This Concrete Implementation renders a web page as JSON strings.
+ */
+class JsonRenderer implements Renderer
+{
+    public function renderTitle(string $title): string
+    {
+        return '"title": "' . $title . '"';
+    }
+
+    public function renderTextBlock(string $text): string
+    {
+        return '"text": "' . $text . '"';
+    }
+
+    public function renderImage(string $url): string
+    {
+        return '"img": "' . $url . '"';
+    }
+
+    public function renderLink(string $url, string $title): string
+    {
+        return '"link": {"href": "' . $url . '", "title": "' . $title . '"}';
+    }
+
+    public function renderHeader(): string
+    {
+        return '';
+    }
+
+    public function renderFooter(): string
+    {
+        return '';
+    }
+
+    public function renderParts(array $parts): string
+    {
+        return "{\n" . implode(",\n", array_filter($parts)) . "\n}";
+    }
+}
+
+/**
+ * The client code usually deals only with the Abstraction objects.
+ */
+function clientCode(Page $page)
+{
+    // ...
+
+    echo $page->view();
+
+    // ...
+}
+
+/**
+ * The client code can be executed with any pre-configured combination of the
+ * Abstraction+Implementation.
+ */
+$HTMLRenderer = new HTMLRenderer();
+$JSONRenderer = new JsonRenderer();
+
+$page = new SimplePage($HTMLRenderer, "Home", "Welcome to our website!");
+echo "HTML view of a simple content page:\n";
+clientCode($page);
+echo "\n\n";
+
+/**
+ * The Abstraction can change the linked Implementation at runtime if needed.
+ */
+$page->changeRenderer($JSONRenderer);
+echo "JSON view of a simple content page, rendered with the same client code:\n";
+clientCode($page);
+echo "\n\n";
+
+
+$product = new Product("123", "Star Wars, episode1",
+    "A long time ago in a galaxy far, far away...",
+    "/images/star-wars.jpeg", 39.95);
+
+$page = new ProductPage($HTMLRenderer, $product);
+echo "HTML view of a product page, same client code:\n";
+clientCode($page);
+echo "\n\n";
+
+$page->changeRenderer($JSONRenderer);
+echo "JSON view of a simple content page, with the same client code:\n";
+clientCode($page);
+```
+
+```
+<?php
+//抽象化角色
+abstract class MiPhone{
+    protected $_audio;      //存放音频软件对象
+    abstract function output();
+    public function __construct(Audio $audio){
+        $this->_audio = $audio;
+    }
+}
+//具体手机
+class Mix extends MiPhone{
+    //语音输出功能
+    public function output(){
+        $this->_audio->output();
+    }
+}
+class Note extends MiPhone{
+    public function output(){
+        $this->_audio->output();
+    }
+}
+//实现化角色 功能实现者
+abstract class Audio{
+    abstract function output();
+}
+//具体音频实现者 -骨传导音频输出
+class Osteophony extends Audio{
+    public function output(){
+        echo "骨传导输出的声音-----哈哈".PHP_EOL;
+    }
+}
+//普通音频输出---声筒输出
+class Cylinder extends Audio{
+    public function output(){
+        echo "声筒输出的声音-----呵呵".PHP_EOL;
+    }
+}
+
+//让小米mix和小米note输出声音
+$mix = new Mix(new Osteophony);
+$mix->output();
+$note = new Note(new Cylinder);
+$note->output();
+```
+
+#### go
+```
+package design
+
+import "fmt"
+
+//Computer 抽象层 包含具体实施层的引用
+type Computers interface {
+	Print()
+	SetPrinter(printer)
+}
+
+type Macs struct {
+	printer printer
+}
+
+func (m *Macs) Print() {
+	fmt.Println("MAC")
+	m.printer.printFile()
+}
+
+func (m *Macs) SetPrinter(p printer) {
+	m.printer = p
+}
+
+type Windows struct {
+	printer printer
+}
+
+func (w *Windows) Print() {
+	fmt.Println("Print request for windows")
+	w.printer.printFile()
+}
+
+func (w *Windows) SetPrinter(p printer) {
+	w.printer = p
+}
+
+//具体实施的接口
+type printer interface {
+	printFile()
+}
+
+type Epson struct {
+}
+
+func (p *Epson) printFile() {
+	fmt.Println("Printing by a EPSON Printer")
+}
+
+type Hp struct {
+}
+
+func (p *Hp) printFile() {
+	fmt.Println("Printing by a HP Printer")
+}
+
+```
+
 ## 行为型
 
 ### 观察者模式

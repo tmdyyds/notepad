@@ -2907,6 +2907,7 @@ $note->output();
 ```
 
 #### go
+
 ```
 package design
 
@@ -2978,8 +2979,429 @@ func (p *Hp) printFile() {
 ```
 ```
 
-## 平台推荐
+### 策略模式
+> 定义一族算法，将每个算法封装起来，让它们可以互相替换。使算法的变化独立与使用它们的客户端。( **所有策略基于同一个接口** )
 
+#### 实例
+```
+public interface Strategy {
+  void algorithmInterface();
+}
+
+public class ConcreteStrategyA implements Strategy {
+  @Override
+  public void  algorithmInterface() {
+    //具体的算法...
+  }
+}
+
+public class ConcreteStrategyB implements Strategy {
+  @Override
+  public void  algorithmInterface() {
+    //具体的算法...
+  }
+}
+```
+
+```
+//策略与工厂模式结合
+public class StrategyFactory {
+  public static Strategy getStrategy(String type) {
+    if (type == null || type.isEmpty()) {
+      throw new IllegalArgumentException("type should not be empty.");
+    }
+
+    if (type.equals("A")) {
+      return new ConcreteStrategyA();
+    } else if (type.equals("B")) {
+      return new ConcreteStrategyB();
+    }
+
+    return null;
+  }
+}
+```
+
+#### php
+```
+interface ApiStrategy
+{
+    public function apiQequest();
+}
+
+class ConcreteStrategyA implements ApiStrategy
+{
+    public function apiQequest()
+    {
+        echo 'A request';
+    }
+}
+
+class ConcreteStrategyB implements ApiStrategy
+{
+    public function apiQequest()
+    {
+        echo 'B request';
+    }
+}
+
+class ApiStrategyFactory
+{
+    public $typeMapClass = [];
+
+    public function __construct()
+    {
+        //这里可以利用反射获取类或把A、B映射类放在配置文件中
+        $this->typeMapClass = [
+            'A' => new ConcreteStrategyA,
+            'B' => new ConcreteStrategyB,
+        ];
+    }
+    public function getStrategy(string $type)
+    {
+        return $this->typeMapClass[$type];
+    }
+}
+
+$f = new ApiStrategyFactory;
+$f->getStrategy('B')->apiQequest();
+```
+
+#### go
+```
+package design
+
+import "fmt"
+
+type evictionAlgo interface {
+	evict(c *cache)
+}
+
+type Lru struct {
+}
+
+func (l *Lru) evict(c *cache) {
+	fmt.Println("lru")
+}
+
+type Lfu struct {
+}
+
+func (l *Lfu) evict(c *cache) {
+	fmt.Println("lfu")
+}
+
+type cache struct {
+	storage      map[string]string
+	evictionAlgo evictionAlgo
+	capacity     int
+	maxCapacity  int
+}
+
+func InitCache(e evictionAlgo) *cache {
+	storage := make(map[string]string)
+	return &cache{
+		storage:      storage,
+		evictionAlgo: e,
+		capacity:     0,
+		maxCapacity:  2,
+	}
+}
+
+func (c *cache) SetEvictionAlgo(e evictionAlgo) {
+	c.evictionAlgo = e
+}
+
+func (c *cache) Add(key, value string) {
+	if c.capacity == c.maxCapacity {
+		c.Evict()
+	}
+
+	c.capacity++
+	c.storage[key] = value
+}
+
+func (c *cache) Get(key string) {
+	delete(c.storage, key)
+}
+
+func (c *cache) Evict() {
+	c.evictionAlgo.evict(c)
+	c.capacity--
+}
+```
+
+<font color="red">**TIP：**</font>
+```
+工厂模式解耦对象的创建。
+观察者解耦观察者和被观察者。
+策略模式解耦的是策略的定义、创建、使用。
+```
+
+
+
+### 模板模式
+> 在父类中定义算法框架，运行子类在不修改结构的情况下重写算法的特定步骤。
+
+#### 实例
+```
+
+public abstract class AbstractClass {
+  public final void templateMethod() {
+    //...
+    method1();
+    //...
+    method2();
+    //...
+  }
+  
+  protected abstract void method1();
+  protected abstract void method2();
+}
+
+public class ConcreteClass1 extends AbstractClass {
+  @Override
+  protected void method1() {
+    //...
+  }
+  
+  @Override
+  protected void method2() {
+    //...
+  }
+}
+
+public class ConcreteClass2 extends AbstractClass {
+  @Override
+  protected void method1() {
+    //...
+  }
+  
+  @Override
+  protected void method2() {
+    //...
+  }
+}
+
+AbstractClass demo = ConcreteClass1();
+demo.templateMethod();
+```
+
+
+#### php
+```
+
+/**
+ * The Abstract Class defines the template method and declares all its steps.
+ */
+abstract class SocialNetwork
+{
+    protected $username;
+
+    protected $password;
+
+    public function __construct(string $username, string $password)
+    {
+        $this->username = $username;
+        $this->password = $password;
+    }
+
+    /**
+     * The actual template method calls abstract steps in a specific order. A
+     * subclass may implement all of the steps, allowing this method to actually
+     * post something to a social network.
+     */
+    public function post(string $message): bool
+    {
+        // Authenticate before posting. Every network uses a different
+        // authentication method.
+        if ($this->logIn($this->username, $this->password)) {
+            // Send the post data. All networks have different APIs.
+            $result = $this->sendData($message);
+            // ...
+            $this->logOut();
+
+            return $result;
+        }
+
+        return false;
+    }
+
+    /**
+     * The steps are declared abstract to force the subclasses to implement them
+     * all.
+     */
+    abstract public function logIn(string $userName, string $password): bool;
+
+    abstract public function sendData(string $message): bool;
+
+    abstract public function logOut(): void;
+}
+
+/**
+ * This Concrete Class implements the Facebook API (all right, it pretends to).
+ */
+class Facebook extends SocialNetwork
+{
+    public function logIn(string $userName, string $password): bool
+    {
+        echo "\nChecking user's credentials...\n";
+        echo "Name: " . $this->username . "\n";
+        echo "Password: " . str_repeat("*", strlen($this->password)) . "\n";
+
+        simulateNetworkLatency();
+
+        echo "\n\nFacebook: '" . $this->username . "' has logged in successfully.\n";
+
+        return true;
+    }
+
+    public function sendData(string $message): bool
+    {
+        echo "Facebook: '" . $this->username . "' has posted '" . $message . "'.\n";
+
+        return true;
+    }
+
+    public function logOut(): void
+    {
+        echo "Facebook: '" . $this->username . "' has been logged out.\n";
+    }
+}
+
+/**
+ * This Concrete Class implements the Twitter API.
+ */
+class Twitter extends SocialNetwork
+{
+    public function logIn(string $userName, string $password): bool
+    {
+        echo "\nChecking user's credentials...\n";
+        echo "Name: " . $this->username . "\n";
+        echo "Password: " . str_repeat("*", strlen($this->password)) . "\n";
+
+        simulateNetworkLatency();
+
+        echo "\n\nTwitter: '" . $this->username . "' has logged in successfully.\n";
+
+        return true;
+    }
+
+    public function sendData(string $message): bool
+    {
+        echo "Twitter: '" . $this->username . "' has posted '" . $message . "'.\n";
+
+        return true;
+    }
+
+    public function logOut(): void
+    {
+        echo "Twitter: '" . $this->username . "' has been logged out.\n";
+    }
+}
+
+/**
+ * A little helper function that makes waiting times feel real.
+ */
+function simulateNetworkLatency()
+{
+    $i = 0;
+    while ($i < 5) {
+        echo ".";
+        sleep(1);
+        $i++;
+    }
+}
+
+/**
+ * The client code.
+ */
+echo "Username: \n";
+$username = readline();
+echo "Password: \n";
+$password = readline();
+echo "Message: \n";
+$message = readline();
+
+echo "\nChoose the social network to post the message:\n" .
+    "1 - Facebook\n" .
+    "2 - Twitter\n";
+$choice = readline();
+
+// Now, let's create a proper social network object and send the message.
+if ($choice == 1) {
+    $network = new Facebook($username, $password);
+} elseif ($choice == 2) {
+    $network = new Twitter($username, $password);
+} else {
+    die("Sorry, I'm not sure what you mean by that.\n");
+}
+$network->post($message);
+```
+
+#### go
+```
+package design
+
+import "fmt"
+
+type dataMiner interface {
+	GetData()
+	OpenFile()
+}
+
+type Datam struct {
+	DataMiner dataMiner
+}
+
+func (d *Datam) ReadData() {
+	//打开逻辑
+	d.DataMiner.OpenFile()
+	//读取逻辑
+	d.DataMiner.GetData()
+
+	fmt.Println("read data")
+}
+
+type Csv struct {
+}
+
+func (c *Csv) OpenFile() {
+	fmt.Println("csv openfile")
+}
+
+func (c *Csv) GetData() {
+	fmt.Println("csv getdata")
+}
+
+type Pdf struct {
+}
+
+func (p *Pdf) OpenFile() {
+	fmt.Println("pdf openfile")
+}
+
+func (p *Pdf) GetData() {
+	fmt.Println("pdf getdata")
+}
+
+
+/////
+func main() {
+	csv := &design.Csv{}
+	d := &design.Datam{
+		DataMiner: csv,
+	}
+	d.ReadData()
+}
+```
+
+<font color="red">**TIP：**</font>
+```
+模板方法基于继承机制： 它允许你通过扩展子类中的部分内容来改变部分算法。 策略模式基于组合机制： 你可以通过对相应行为提供不同的策略来改变对象的部分行为。
+```
+
+## 推荐
 > https://refactoringguru.cn/design-patterns/singleton
 >
 > 

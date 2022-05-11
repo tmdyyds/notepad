@@ -2969,14 +2969,215 @@ func (p *Hp) printFile() {
 ## 行为型
 
 ### 观察者模式
-> 
+> 在对象之间定义一个一对多的依赖，当一个对象状态改变的时候，所有依赖的对象都会收到通知。
+
+#### 实例
+```
+
+public interface Subject {
+  void registerObserver(Observer observer);
+  void removeObserver(Observer observer);
+  void notifyObservers(Message message);
+}
+
+public interface Observer {
+  void update(Message message);
+}
+
+public class ConcreteSubject implements Subject {
+  private List<Observer> observers = new ArrayList<Observer>();
+
+  @Override
+  public void registerObserver(Observer observer) {
+    observers.add(observer);
+  }
+
+  @Override
+  public void removeObserver(Observer observer) {
+    observers.remove(observer);
+  }
+
+  @Override
+  public void notifyObservers(Message message) {
+    for (Observer observer : observers) {
+      observer.update(message);
+    }
+  }
+
+}
+
+public class ConcreteObserverOne implements Observer {
+  @Override
+  public void update(Message message) {
+    //TODO: 获取消息通知，执行自己的逻辑...
+    System.out.println("ConcreteObserverOne is notified.");
+  }
+}
+
+public class ConcreteObserverTwo implements Observer {
+  @Override
+  public void update(Message message) {
+    //TODO: 获取消息通知，执行自己的逻辑...
+    System.out.println("ConcreteObserverTwo is notified.");
+  }
+}
+
+public class Demo {
+  public static void main(String[] args) {
+    ConcreteSubject subject = new ConcreteSubject();
+    subject.registerObserver(new ConcreteObserverOne());
+    subject.registerObserver(new ConcreteObserverTwo());
+    subject.notifyObservers(new Message());
+  }
+}
+```
 
 #### php
 ```
+class MyObserver1 implements SplObserver {
+    public function update(SplSubject $subject) {
+        echo __CLASS__ . ' - ' . $subject->getName();
+    }
+}
+
+class MyObserver2 implements SplObserver {
+    public function update(SplSubject $subject) {
+        echo __CLASS__ . ' - ' . $subject->getName();
+    }
+}
+
+class MySubject implements SplSubject {
+    private $_observers;
+    private $_name;
+
+    public function __construct($name) {
+        $this->_observers = new SplObjectStorage();
+        $this->_name = $name;
+    }
+
+    public function attach(SplObserver $observer) {
+        $this->_observers->attach($observer);
+    }
+
+    public function detach(SplObserver $observer) {
+        $this->_observers->detach($observer);
+    }
+
+    public function notify() {
+        foreach ($this->_observers as $observer) {
+            $observer->update($this);
+        }
+    }
+
+    public function getName() {
+        return $this->_name;
+    }
+}
+
+$observer1 = new MyObserver1();
+$observer2 = new MyObserver2();
+
+$subject = new MySubject("test");
+
+$subject->attach($observer1);
+$subject->attach($observer2);
+$subject->notify();
+
 ```
 
 #### go
 ```
+package design
+
+import (
+	"fmt"
+	"os"
+)
+
+// Subject 主题 也叫被观察者
+type Subject interface {
+	RegisterObserver(ob observer)
+	DeleteObserver(ob observer)
+	NotifyAll()
+}
+
+//具体主题
+type item struct {
+	observers []observer
+	name      string
+	inStock   bool
+}
+
+func NewItem(name string) *item {
+	return &item{
+		name: name,
+	}
+}
+
+func (i *item) RegisterObserver(o observer) {
+	i.observers = append(i.observers, o)
+}
+
+func (i *item) DeleteObserver(o observer) {
+	i.observers = removeFromSlice(i.observers, o)
+}
+
+func (i *item) NotifyAll() {
+	i.inStock = true
+	i.nofity()
+}
+
+func (i *item) nofity() {
+	for _, ob := range i.observers {
+		ob.Update(i.name)
+	}
+}
+
+func removeFromSlice(obList []observer, delOb observer) []observer {
+	for i, ob := range obList {
+		fmt.Println(i, ob)
+		os.Exit(0)
+	}
+
+	return obList
+}
+
+//观察者
+type observer interface {
+	Update(string)
+}
+
+//Customer 具体观察者
+type customer struct {
+	id string
+}
+
+func NewCustomer(id string) *customer {
+	return &customer{
+		id: id,
+	}
+}
+
+func (c *customer) Update(name string) {
+	fmt.Printf("顾客邮箱 %s, 顾客姓名 %s \n", c.id, name)
+}
+
+func (c *customer) GetId() string {
+	return c.id
+}
+
+
+func main() {
+	n := design.NewItem("鸿星尔克")
+
+	c1 := design.NewCustomer("wangbin1@163.com")
+	c2 := design.NewCustomer("wangbin2@163.com")
+
+	n.RegisterObserver(c1)
+	n.RegisterObserver(c2)
+
+	n.NotifyAll()
+}
 ```
 
 ### 策略模式
@@ -3137,8 +3338,6 @@ func (c *cache) Evict() {
 观察者解耦观察者和被观察者。
 策略模式解耦的是策略的定义、创建、使用。
 ```
-
-
 
 ### 模板模式
 > 在父类中定义算法框架，运行子类在不修改结构的情况下重写算法的特定步骤。
@@ -3386,7 +3585,6 @@ func (p *Pdf) GetData() {
 }
 
 
-/////
 func main() {
 	csv := &design.Csv{}
 	d := &design.Datam{
@@ -3400,6 +3598,14 @@ func main() {
 ```
 模板方法基于继承机制： 它允许你通过扩展子类中的部分内容来改变部分算法。 策略模式基于组合机制： 你可以通过对相应行为提供不同的策略来改变对象的部分行为。
 ```
+
+
+
+## 设计模式
+  - 创建、行为、结构
+  > 创建型模式解决对象的创建问题。结构型模式解决类或对象组合或组装问题。行为型模式解决类或对象之间的交互问题。
+  > 
+  > 设计模式要干的事情就是解耦。创建型模式是将创建和使用代码解耦，结构型模式是将不同功能代码解耦，行为型模式是将不同的行为代码解耦，具体到观察者模式，它是将观察者和被观察者代码解耦
 
 ## 推荐
 > https://refactoringguru.cn/design-patterns/singleton

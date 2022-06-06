@@ -67,3 +67,15 @@ echo $b->abc;
 echo $b->obj->tmpa;
 echo $a->obj->tmpa;
 ```
+
+#### array_filter(**$child != $t**)函数
+```
+//定义：遍历 array 数组中的每个值，并将每个值传递给 callback 回调函数。 如果 callback 回调函数返回 true，则将 array 数组中的当前值返回到结果 array 数组中。
+
+$arr = ['a'=> 'aa', 'b' => 'bb', 'c' => 'cc'];
+$t = 'aa';
+var_dump(array_filter($arr, function ($child) use ($t) {
+    return $child != $t; //这里可以过滤调arr数组中指定的值。在使用中常用的方式是利用返回为true进而保存到arr中，利用!反义来过滤arr中的值也是一个不错的方式。
+}));
+
+```

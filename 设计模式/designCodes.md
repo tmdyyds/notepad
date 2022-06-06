@@ -2421,7 +2421,7 @@ func (s *securityCode) checkCode(incomingCode int) error {
 - 适配器和门面设计区别
 > 适配器是做接口转换，解决原接口和目标接口不匹配问题。门面模式做接口整合，解决是多接口调用带来的问题。
 
-### 桥连模式
+### 桥接模式
 > “一个类存在两个（或多个）独立变化的维度，我们通过组合的方式，让这两个（或多个）维度可以独立进行扩展。”通过组合关系来替代继承关系，避免继承层次的指数级爆炸。
 > 将抽象和实现解耦，让它们可以独立的变化
 
@@ -3600,6 +3600,419 @@ func main() {
 ```
 
 
+
+
+### 状态模式
+> 让你能在一个对象的内部状态变化时改变其行为， 使其看上去就像改变了自身所属的类一样。
+> 
+> 状态模式一般用来实现状态机，而状态机常用在游戏、工作流引擎等系统开发中。不过，状态机的实现方式有多种，除了状态模式，比较常用的还有分支逻辑法和查表法。
+> 
+> 状态机有 3 个组成部分：状态（State）、事件（Event）、动作（Action）。其中，事件也称为转移条件（Transition Condition）。事件触发状态的转移及动作的执行。不过，动作不是必须的，也可能只转移状态，不执行任何动作。
+
+#### php
+```
+<?php
+class Context
+{
+    private $state;
+
+    public function __construct(State $state)
+    {
+        $this->transitionTo($state);
+    }
+
+    /**
+     * The Context allows changing the State object at runtime.
+     */
+    public function transitionTo(State $state): void
+    {
+        echo "类: Transition to " . get_class($state) . ".\n";
+        $this->state = $state;
+        $this->state->setContext($this);
+    }
+
+    /**
+     * The Context delegates part of its behavior to the current State object.
+     */
+    public function request1(): void
+    {
+        $this->state->handle1();
+    }
+
+    public function request2(): void
+    {
+        $this->state->handle2();
+    }
+}
+
+/**
+ * The base State class declares methods that all Concrete State should
+ * implement and also provides a backreference to the Context object, associated
+ * with the State. This backreference can be used by States to transition the
+ * Context to another State.
+ */
+abstract class State
+{
+    /**
+     * @var Context
+     */
+    protected $context;
+
+    public function setContext(Context $context)
+    {
+        $this->context = $context;
+    }
+
+    abstract public function handle1(): void;
+
+    abstract public function handle2(): void;
+}
+
+/**
+ * Concrete States implement various behaviors, associated with a state of the
+ * Context.
+ */
+class ConcreteStateA extends State
+{
+    public function handle1(): void
+    {
+        echo "老王.\n";
+        $this->context->transitionTo(new ConcreteStateB());
+    }
+
+    public function handle2(): void
+    {
+        echo "ConcreteStateA handles request2.\n";
+    }
+}
+
+class ConcreteStateB extends State
+{
+    public function handle1(): void
+    {
+        echo "ConcreteStateB handles request1.\n";
+    }
+
+    public function handle2(): void
+    {
+        echo "ConcreteStateB handles request2.\n";
+        echo "ConcreteStateB wants to change the state of the context.\n";
+        $this->context->transitionTo(new ConcreteStateA());
+    }
+}
+
+/**
+ * The client code.
+ */
+$context = new Context(new ConcreteStateA());
+$context->request1();
+$context->request2();
+```
+
+```
+
+//状态接口
+abstract class IMario
+{
+    public $marioStateMachine;
+
+    public function __construct($marioStateMachine)
+    {
+        $this->marioStateMachine = $marioStateMachine;
+    }
+
+    //事件
+    abstract public function obtainMushRoom(); //获得蘑菇房
+/*    abstract public function obtainCape(); //获得斗篷
+    abstract public function obtainFireFlower(); //获得火焰
+    abstract public function meetMonster(); //遇到怪物*/
+}
+
+//小马里奥状态
+class SmallMario extends IMario
+{
+    public function obtainMushRoom()
+    {
+        $this->stateMachineActive(); //这一步 可以优化
+        $this->marioStateMachine->setScore($this->marioStateMachine->getScore() + 100);
+    }
+
+    private function stateMachineActive()
+    {
+        //事件转义
+        $this->marioStateMachine->setCurrentState(new SuperMario($this->marioStateMachine));
+    }
+
+    //....obtainCape obtainFireFlower meetMonster其他方法与之类似
+}
+
+// 省略CapeMario、FireMario类...
+
+class SuperMario extends IMario
+{
+    public function obtainMushRoom()
+    {
+        exit('666');
+    }
+}
+
+
+class MarioStateMachine
+{
+    private $statue;
+    private $score;
+
+    public function __construct()
+    {
+        //初始化
+        $this->statue = new SmallMario($this);
+    }
+
+    public function setCurrentState(IMario $imario)
+    {
+        $this->statue = $imario;
+    }
+
+    public function getScore()
+    {
+        return intval($this->score);
+    }
+
+    public function setScore(int $score)
+    {
+        $this->score = $score;
+    }
+
+    public function obtainMushRoom()
+    {
+        $this->statue->obtainMushRoom();
+    }
+}
+
+$n = new MarioStateMachine;
+$n->obtainMushRoom();
+var_dump($n->getScore());
+```
+
+#### go
+```
+package design
+
+import "fmt"
+
+type vendingMachine struct {
+	hasItem       state
+	itemRequested state
+	hasMoney      state
+	noItem        state
+
+	currentState state
+
+	itemCount int
+	itemPrice int
+}
+
+func newVendingMachine(itemCount, itemPrice int) *vendingMachine {
+	v := &vendingMachine{
+		itemCount: itemCount,
+		itemPrice: itemPrice,
+	}
+	hasItemState := &hasItemState{
+		vendingMachine: v,
+	}
+	itemRequestedState := &itemRequestedState{
+		vendingMachine: v,
+	}
+	hasMoneyState := &hasMoneyState{
+		vendingMachine: v,
+	}
+	noItemState := &noItemState{
+		vendingMachine: v,
+	}
+
+	v.setState(hasItemState)
+	v.hasItem = hasItemState
+	v.itemRequested = itemRequestedState
+	v.hasMoney = hasMoneyState
+	v.noItem = noItemState
+	return v
+}
+
+func (v *vendingMachine) requestItem() error {
+	return v.currentState.requestItem()
+}
+
+func (v *vendingMachine) addItem(count int) error {
+	return v.currentState.addItem(count)
+}
+
+func (v *vendingMachine) insertMoney(money int) error {
+	return v.currentState.insertMoney(money)
+}
+
+func (v *vendingMachine) dispenseItem() error {
+	return v.currentState.dispenseItem()
+}
+
+func (v *vendingMachine) setState(s state) {
+	v.currentState = s
+}
+
+func (v *vendingMachine) incrementItemCount(count int) {
+	fmt.Printf("Adding %d items\n", count)
+	v.itemCount = v.itemCount + count
+}
+
+type state interface {
+	addItem(int) error
+	requestItem() error
+	insertMoney(money int) error
+	dispenseItem() error
+}
+
+type noItemState struct {
+	vendingMachine *vendingMachine
+}
+
+func (i *noItemState) requestItem() error {
+	return fmt.Errorf("Item out of stock")
+}
+
+func (i *noItemState) addItem(count int) error {
+	i.vendingMachine.incrementItemCount(count)
+	i.vendingMachine.setState(i.vendingMachine.hasItem)
+	return nil
+}
+
+func (i *noItemState) insertMoney(money int) error {
+	return fmt.Errorf("Item out of stock")
+}
+func (i *noItemState) dispenseItem() error {
+	return fmt.Errorf("Item out of stock")
+}
+
+type hasItemState struct {
+	vendingMachine *vendingMachine
+}
+
+func (i *hasItemState) requestItem() error {
+	if i.vendingMachine.itemCount == 0 {
+		i.vendingMachine.setState(i.vendingMachine.noItem)
+		return fmt.Errorf("No item present")
+	}
+	fmt.Printf("Item requestd\n")
+	i.vendingMachine.setState(i.vendingMachine.itemRequested)
+	return nil
+}
+
+func (i *hasItemState) addItem(count int) error {
+	fmt.Printf("%d items added\n", count)
+	i.vendingMachine.incrementItemCount(count)
+	return nil
+}
+
+func (i *hasItemState) insertMoney(money int) error {
+	return fmt.Errorf("Please select item first")
+}
+func (i *hasItemState) dispenseItem() error {
+	return fmt.Errorf("Please select item first")
+}
+
+type itemRequestedState struct {
+	vendingMachine *vendingMachine
+}
+
+func (i *itemRequestedState) requestItem() error {
+	return fmt.Errorf("Item already requested")
+}
+
+func (i *itemRequestedState) addItem(count int) error {
+	return fmt.Errorf("Item Dispense in progress")
+}
+
+func (i *itemRequestedState) insertMoney(money int) error {
+	if money < i.vendingMachine.itemPrice {
+		fmt.Errorf("Inserted money is less. Please insert %d", i.vendingMachine.itemPrice)
+	}
+	fmt.Println("Money entered is ok")
+	i.vendingMachine.setState(i.vendingMachine.hasMoney)
+	return nil
+}
+func (i *itemRequestedState) dispenseItem() error {
+	return fmt.Errorf("Please insert money first")
+}
+
+type hasMoneyState struct {
+	vendingMachine *vendingMachine
+}
+
+func (i *hasMoneyState) requestItem() error {
+	return fmt.Errorf("Item dispense in progress")
+}
+
+func (i *hasMoneyState) addItem(count int) error {
+	return fmt.Errorf("Item dispense in progress")
+}
+
+func (i *hasMoneyState) insertMoney(money int) error {
+	return fmt.Errorf("Item out of stock")
+}
+func (i *hasMoneyState) dispenseItem() error {
+	fmt.Println("Dispensing Item")
+	i.vendingMachine.itemCount = i.vendingMachine.itemCount - 1
+	if i.vendingMachine.itemCount == 0 {
+		i.vendingMachine.setState(i.vendingMachine.noItem)
+	} else {
+		i.vendingMachine.setState(i.vendingMachine.hasItem)
+	}
+	return nil
+}
+
+
+//
+func main() {
+    vendingMachine := newVendingMachine(1, 10)
+
+    err := vendingMachine.requestItem()
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    err = vendingMachine.insertMoney(10)
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    err = vendingMachine.dispenseItem()
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    fmt.Println()
+
+    err = vendingMachine.addItem(2)
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    fmt.Println()
+
+    err = vendingMachine.requestItem()
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    err = vendingMachine.insertMoney(10)
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+
+    err = vendingMachine.dispenseItem()
+    if err != nil {
+        log.Fatalf(err.Error())
+    }
+}
+```
 
 ## 设计模式
   - 创建、行为、结构

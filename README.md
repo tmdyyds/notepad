@@ -2,6 +2,12 @@
 - [设计模式基础知识](设计模式/basicKnowledge.md)
 - [设计模式Code(php&go)](设计模式/designCodes.md)
 
+## Vim
+- [vim常用笔记](勤学笔记/vim/vim.md)
+
+## Docker
+- [docker常用笔记](勤学笔记/docker/docker.md)
+
 ## leetcode刷题
 **简单**
 - [1. 两数之和](算法/leetcode/1-两数之和.md)
